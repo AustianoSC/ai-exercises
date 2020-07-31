@@ -9,7 +9,7 @@ class PathNode {
 public:
     PathNode(unsigned int row, unsigned int col, bool isFood = false)
     : m_row(row), m_col(m_col), m_isFood(isFood) {
-
+        m_neighbors.resize(4);
     }
 
     PathCoordinates getRowCol() {
@@ -20,9 +20,18 @@ public:
         return m_isFood;
     }
 
+    void addNeighbor(PathNode* node) {
+        m_neighbors.push_back(node);
+    }
+
+    const vector<PathNode*>& getNeighbors() {
+        return m_neighbors;
+    }
+
 private:
     unsigned int m_row, m_col;
     bool m_isFood;
+    vector<PathNode*> m_neighbors;
 };
 
 struct hash_pair { 
@@ -60,6 +69,28 @@ PathNodeMap* const createGraph(vector<string> grid) {
     }
 
     // Add each neighbor of each PathNode in the PathMap
+    PathNodeMap::iterator it;
+    for (it = graphMap->begin(); it != graphMap->end(); ++it) {
+        // Get coordinates of curent node
+        PathCoordinates coordinates = it->second->getRowCol();
+
+        // Add above above node
+        PathNodeMap::iterator neighbor;
+        neighbor = graphMap->find(PathCoordinates(coordinates.first-1, coordinates.second));
+        if (neighbor != graphMap->end()) it->second->addNeighbor(neighbor->second);
+        
+        // Add left node
+        neighbor = graphMap->find(PathCoordinates(coordinates.first, coordinates.second-1));
+        if (neighbor != graphMap->end()) it->second->addNeighbor(neighbor->second);
+        
+        // Add right node
+        neighbor = graphMap->find(PathCoordinates(coordinates.first+1, coordinates.second));
+        if (neighbor != graphMap->end()) it->second->addNeighbor(neighbor->second);
+        
+        //Add below node
+        neighbor = graphMap->find(PathCoordinates(coordinates.first+1, coordinates.second));
+        if (neighbor != graphMap->end()) it->second->addNeighbor(neighbor->second);
+    }
 
     return graphMap;
 }
