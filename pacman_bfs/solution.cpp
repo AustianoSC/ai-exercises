@@ -11,7 +11,7 @@ class PathNode {
 public:
     PathNode(unsigned int row, unsigned int col, bool isFood = false)
     : m_row(row), m_col(col), m_isFood(isFood) {
-        m_neighbors.resize(4);
+        m_neighbors.reserve(4);
     }
 
     PathCoordinates getRowCol() {
