@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <queue>
+#include <stack>
 using namespace std;
 
 typedef pair<unsigned int, unsigned int> PathCoordinates;
@@ -8,7 +10,7 @@ typedef pair<unsigned int, unsigned int> PathCoordinates;
 class PathNode {
 public:
     PathNode(unsigned int row, unsigned int col, bool isFood = false)
-    : m_row(row), m_col(m_col), m_isFood(isFood) {
+    : m_row(row), m_col(col), m_isFood(isFood) {
         m_neighbors.resize(4);
     }
 
@@ -26,6 +28,14 @@ public:
 
     const vector<PathNode*>& getNeighbors() {
         return m_neighbors;
+    }
+
+    unsigned int getRow() {
+        return m_row;
+    }
+    
+    unsigned int getCol() {
+        return m_col;
     }
 
 private:
@@ -103,11 +113,76 @@ void deleteGraph(PathNodeMap* const graphMap) {
     delete graphMap;
 }
 
-void nextMove( int r, int c, int pacman_r, int pacman_c, int food_r, int food_c, vector<string> grid) {
-    //your logic here
+stack<PathNode*> findFoodBFS(PathNode* startNode) {
+    // If current node is the food, already found
+    if (startNode->isFood()) return stack<PathNode*>();
+
+    // Create mapping from PathNode to parent PathNode
+    unordered_map<PathNode*, PathNode*> pathNodeToParent;
+    pathNodeToParent[startNode] = nullptr;
+
+    // Create frontier queue and add startNode to frontier
+    queue<PathNode*> frontier;
+    frontier.push(startNode);
+
+    // While there are nodes left in the frontier, search for the food node
+    PathNode* currentNode;
+    bool foundPath = false;
+    while (frontier.size()) {
+        // Get next node and pop it off the frontier
+        currentNode = frontier.front();
+        frontier.pop();
+
+        // Print the current node out for hacker rank output
+        cout << currentNode->getRow() << ' ' << currentNode->getCol() << '\n';
+
+        // If currentNode is a food node, then we've found a path  
+        if (currentNode->isFood()) {
+            foundPath = true;
+            break;
+        }
+
+        // Add neighbors of the currentNode to the frontier
+        for (PathNode* neighborNode : currentNode->getNeighbors()) {
+            // Find if this pathNode is already in the 
+            unordered_map<PathNode*, PathNode*>::iterator it; 
+            it = pathNodeToParent.find(neighborNode);
+
+            // If this pathNode has not already been discovered, 
+            // then add it to frontier and set parent
+            if (it != pathNodeToParent.end()) {
+                pathNodeToParent[neighborNode] = currentNode;
+                frontier.push(neighborNode);
+            }
+        } 
+    }
+
+    // If we found a path, reconstruct it and return it
+    stack<PathNode*> path;
+    if (foundPath) {
+        // Keep filling up the path
+        while (currentNode != startNode) {
+            path.push(currentNode);
+            currentNode = pathNodeToParent[currentNode];
+        }
+        path.push(currentNode);
+    }
+
+    // Return the path
+    return path;
 }
 
+void printPath(stack<PathNode*>& path) {
+    cout << path.size()-1 << '\n';
+    while (path.size()) {
+        // Get next node in path
+        PathNode* node = path.top();
+        path.pop();
 
+        // Print out the next node in the path
+        cout << node->getRow() << ' ' << node->getCol() << '\n';
+    }
+}
 
 int main(void) {
 
@@ -126,7 +201,11 @@ int main(void) {
     // Create graph of space
     PathNodeMap* graphMap = createGraph(grid);
 
-    nextMove( r, c, pacman_r, pacman_c, food_r, food_c, grid);
+    // Find the path to the food using BFS
+    PathNode* node = graphMap->at(PathCoordinates(pacman_r, pacman_c));
+    stack<PathNode*> path = findFoodBFS(graphMap->at(PathCoordinates(pacman_r, pacman_c)));
+
+    // Print out the path to the food for hacker rank output
 
     // Deallocate graph map
     deleteGraph(graphMap);
