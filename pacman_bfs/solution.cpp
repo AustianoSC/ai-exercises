@@ -71,6 +71,7 @@ PathNodeMap* const createGraph(vector<string> grid) {
                 break;
             case '.':
                 graphMap->emplace(PathCoordinates(row, col), new PathNode(row, col, true));
+                break;
             case '%':
             default:
                 continue;
@@ -94,7 +95,7 @@ PathNodeMap* const createGraph(vector<string> grid) {
         if (neighbor != graphMap->end()) it->second->addNeighbor(neighbor->second);
         
         // Add right node
-        neighbor = graphMap->find(PathCoordinates(coordinates.first+1, coordinates.second));
+        neighbor = graphMap->find(PathCoordinates(coordinates.first, coordinates.second+1));
         if (neighbor != graphMap->end()) it->second->addNeighbor(neighbor->second);
         
         //Add below node
@@ -148,9 +149,9 @@ stack<PathNode*> findFoodBFS(PathNode* startNode) {
             unordered_map<PathNode*, PathNode*>::iterator it; 
             it = pathNodeToParent.find(neighborNode);
 
-            // If this pathNode has not already been discovered, 
+            // If this pathNode has not been discovered, 
             // then add it to frontier and set parent
-            if (it != pathNodeToParent.end()) {
+            if (it == pathNodeToParent.end()) {
                 pathNodeToParent[neighborNode] = currentNode;
                 frontier.push(neighborNode);
             }
