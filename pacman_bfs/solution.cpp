@@ -202,7 +202,6 @@ int main(void) {
     PathNodeMap* graphMap = createGraph(grid);
 
     // Find the path to the food using BFS
-    PathNode* node = graphMap->at(PathCoordinates(pacman_r, pacman_c));
     stack<PathNode*> path = findFoodBFS(graphMap->at(PathCoordinates(pacman_r, pacman_c)));
 
     // Print out the path to the food for hacker rank output
