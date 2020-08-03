@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <queue>
 #include <stack>
+#include <set>
+#include <cmath>
 using namespace std;
 
 typedef pair<unsigned int, unsigned int> PathCoordinates;
@@ -51,6 +53,54 @@ struct hash_pair {
         auto hash2 = hash<T2>{}(p.second); 
         return hash1 ^ hash2; 
     } 
+};
+
+class PathNodeInfo {
+public:
+    PathNodeInfo(PathNode* node, PathNode* const targetNode, PathNode* parent = nullptr)
+    : m_node(node), m_parent(parent), m_g(0), m_closed(false) {
+        setHeuristic(targetNode);
+    }
+
+    // Manhattan Distance Heuristic
+    void setHeuristic(PathNode* const targetNode) {
+        m_h = abs(m_node->getRow() - targetNode->getRow()) + abs(m_node->getCol() - targetNode->getCol());
+    }
+
+    unsigned int getHeurisitc() const {
+        return m_h;
+    }
+
+    void setActualCost(unsigned int cost) {
+        m_g = cost;
+    }
+
+    unsigned int getActualCost() const {
+        return m_g;
+    }
+
+    unsigned int getDecisionValue() const {
+        return m_g + m_h;
+    }
+
+    void close() {
+        m_closed = true;
+    }
+
+    bool isClosed() const {
+        return m_closed;
+    }
+
+private:
+    PathNode* m_node, *m_parent;
+    unsigned int m_g, m_h;
+    bool m_closed;
+};
+
+struct PathNodeInfoComparator {
+    bool operator()(const PathNodeInfo& lhs, const PathNodeInfo& rhs) {
+        return lhs.getDecisionValue() > rhs.getDecisionValue();
+    }
 };
 
 typedef unordered_map<pair<unsigned int, unsigned int>, PathNode*, hash_pair> PathNodeMap;
@@ -113,69 +163,14 @@ void deleteGraph(PathNodeMap* const graphMap) {
     delete graphMap;
 }
 
-stack<PathNode*> findFoodBFS(PathNode* startNode) {
+stack<PathNode*> findFoodAStar(PathNode* startNode) {
     // If current node is the food, already found
     if (startNode->isFood()) return stack<PathNode*>();
 
-    // Create mapping from PathNode to parent PathNode
-    unordered_map<PathNode*, PathNode*> pathNodeToParent;
-    pathNodeToParent[startNode] = nullptr;
+    // Create open set. Closed set is implicitly in PathNodeInfos
+    set<PathNodeInfo, PathNodeInfoComparator> openSet;
 
-    // Create frontier queue and add startNode to frontier
-    queue<PathNode*> frontier;
-    frontier.push(startNode);
-
-    // While there are nodes left in the frontier, search for the food node
-    PathNode* currentNode;
-    queue<PathNode*> nodesExpanded;
-    bool foundPath = false;
-    while (frontier.size()) {
-        // Get next node and pop it off the frontier
-        currentNode = frontier.front();
-        frontier.pop();
-
-        // Store the current node for Hacker Rank output
-        nodesExpanded.push(currentNode);
-
-        // If currentNode is a food node, then we've found a path  
-        if (currentNode->isFood()) {
-            foundPath = true;
-            break;
-        }
-
-        // Add neighbors of the currentNode to the frontier
-        for (PathNode* neighborNode : currentNode->getNeighbors()) {
-            // Find if this pathNode is already in the 
-            unordered_map<PathNode*, PathNode*>::iterator it; 
-            it = pathNodeToParent.find(neighborNode);
-
-            // If this pathNode has not been discovered, 
-            // then add it to frontier and set parent
-            if (it == pathNodeToParent.end()) {
-                pathNodeToParent[neighborNode] = currentNode;
-                frontier.push(neighborNode);
-            }
-        } 
-    }
-
-    // If we found a path, reconstruct it and return it
     stack<PathNode*> path;
-    if (foundPath) {
-        // Keep filling up the path
-        while (currentNode != startNode) {
-            path.push(currentNode);
-            currentNode = pathNodeToParent[currentNode];
-        }
-        path.push(currentNode);
-    }
-
-    // Print out all of the explored nodes
-    cout << nodesExpanded.size() << '\n';
-    while (nodesExpanded.size()) {
-        PathNode* node = nodesExpanded.front();
-        nodesExpanded.pop();
-        cout << node->getRow() << ' ' << node->getCol() << '\n';
-    }
 
     // Return the path
     return path;
@@ -211,7 +206,7 @@ int main(void) {
     PathNodeMap* graphMap = createGraph(grid);
 
     // Find the path to the food using BFS
-    stack<PathNode*> path = findFoodBFS(graphMap->at(PathCoordinates(pacman_r, pacman_c)));
+    stack<PathNode*> path = findFoodAStar(graphMap->at(PathCoordinates(pacman_r, pacman_c)));
 
     // Print out the path to the food for hacker rank output
     printPath(path);
