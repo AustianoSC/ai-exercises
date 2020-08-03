@@ -128,14 +128,15 @@ stack<PathNode*> findFoodBFS(PathNode* startNode) {
 
     // While there are nodes left in the frontier, search for the food node
     PathNode* currentNode;
+    queue<PathNode*> nodesExpanded;
     bool foundPath = false;
     while (frontier.size()) {
         // Get next node and pop it off the frontier
         currentNode = frontier.front();
         frontier.pop();
 
-        // Print the current node out for hacker rank output
-        cout << currentNode->getRow() << ' ' << currentNode->getCol() << '\n';
+        // Store the current node for Hacker Rank output
+        nodesExpanded.push(currentNode);
 
         // If currentNode is a food node, then we've found a path  
         if (currentNode->isFood()) {
@@ -167,6 +168,14 @@ stack<PathNode*> findFoodBFS(PathNode* startNode) {
             currentNode = pathNodeToParent[currentNode];
         }
         path.push(currentNode);
+    }
+
+    // Print out all of the explored nodes
+    cout << nodesExpanded.size() << '\n';
+    while (nodesExpanded.size()) {
+        PathNode* node = nodesExpanded.front();
+        nodesExpanded.pop();
+        cout << node->getRow() << ' ' << node->getCol() << '\n';
     }
 
     // Return the path
@@ -206,6 +215,7 @@ int main(void) {
     stack<PathNode*> path = findFoodBFS(graphMap->at(PathCoordinates(pacman_r, pacman_c)));
 
     // Print out the path to the food for hacker rank output
+    printPath(path);
 
     // Deallocate graph map
     deleteGraph(graphMap);
