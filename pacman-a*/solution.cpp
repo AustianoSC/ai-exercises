@@ -64,7 +64,7 @@ public:
 
     // Manhattan Distance Heuristic
     void setHeuristic(PathNode* const targetNode) {
-        m_h = abs(m_node->getRow() - targetNode->getRow()) + abs(m_node->getCol() - targetNode->getCol());
+        m_h = abs((int)m_node->getRow() - (int)(targetNode->getRow())) + abs((int)m_node->getCol() - (int)(targetNode->getCol()));
     }
 
     unsigned int getHeurisitc() const {
@@ -163,12 +163,14 @@ void deleteGraph(PathNodeMap* const graphMap) {
     delete graphMap;
 }
 
-stack<PathNode*> findFoodAStar(PathNode* startNode) {
+stack<PathNode*> findFoodAStar(PathNode* startNode, PathNode* targetNode) {
     // If current node is the food, already found
     if (startNode->isFood()) return stack<PathNode*>();
 
     // Create open set. Closed set is implicitly in PathNodeInfos
+    // Also doubles as a priority queue (min heap) on the decision value of each NodeInfo
     set<PathNodeInfo, PathNodeInfoComparator> openSet;
+    openSet.emplace(startNode, targetNode);
 
     stack<PathNode*> path;
 
@@ -206,7 +208,10 @@ int main(void) {
     PathNodeMap* graphMap = createGraph(grid);
 
     // Find the path to the food using BFS
-    stack<PathNode*> path = findFoodAStar(graphMap->at(PathCoordinates(pacman_r, pacman_c)));
+    stack<PathNode*> path = findFoodAStar(
+        graphMap->at(PathCoordinates(pacman_r, pacman_c)), 
+        graphMap->at(PathCoordinates(food_r, food_c))
+    );
 
     // Print out the path to the food for hacker rank output
     printPath(path);
