@@ -194,6 +194,7 @@ stack<PathNode*> findFoodAStar(PathNode* startNode, PathNode* targetNode, PathNo
     for (PathNodeMap::iterator it = graphMap->begin(); it != graphMap->end(); it++) {
         nodeInfos.emplace(it->second, PathNodeInfo(it->second, targetNode));
     }
+    nodeInfos[currentNode].close();
 
     // While open set is not empty, search for targetNode
    do {
@@ -243,7 +244,7 @@ stack<PathNode*> findFoodAStar(PathNode* startNode, PathNode* targetNode, PathNo
 	do {
 		path.push(currentNode);
 		currentNode = nodeInfos[currentNode].getParent();
-	} while (currentNode != startNode);
+	} while (currentNode != nullptr);
 
     // Return the path
     return path;
