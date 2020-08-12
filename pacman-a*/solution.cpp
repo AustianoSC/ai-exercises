@@ -57,6 +57,11 @@ struct hash_pair {
 
 class PathNodeInfo {
 public:
+    PathNodeInfo() 
+    : m_node(nullptr), m_parent(nullptr), m_g(0), m_h(0), m_closed(false) {
+
+    }
+
     PathNodeInfo(PathNode* node, PathNode* const targetNode, PathNode* parent = nullptr)
     : m_node(node), m_parent(parent), m_g(0), m_closed(false) {
         setHeuristic(targetNode);
@@ -89,6 +94,18 @@ public:
 
     bool isClosed() const {
         return m_closed;
+    }
+
+    inline PathNode* const getNode() const {
+        return m_node;
+    }
+
+    void setParent(PathNode* node) {
+        m_parent = node;
+    }
+
+    PathNode* getParent() {
+        return m_parent;
     }
 
 private:
@@ -163,16 +180,70 @@ void deleteGraph(PathNodeMap* const graphMap) {
     delete graphMap;
 }
 
-stack<PathNode*> findFoodAStar(PathNode* startNode, PathNode* targetNode) {
+stack<PathNode*> findFoodAStar(PathNode* startNode, PathNode* targetNode, PathNodeMap* graphMap) {
     // If current node is the food, already found
     if (startNode->isFood()) return stack<PathNode*>();
 
     // Create open set. Closed set is implicitly in PathNodeInfos
     // Also doubles as a priority queue (min heap) on the decision value of each NodeInfo
-    set<PathNodeInfo, PathNodeInfoComparator> openSet;
-    openSet.emplace(startNode, targetNode);
+    set<PathNode*> openSet;
+    PathNode* currentNode = startNode;
 
+    // Create map of PathNodeInfos
+    unordered_map<PathNode*, PathNodeInfo> nodeInfos;
+    for (PathNodeMap::iterator it = graphMap->begin(); it != graphMap->end(); it++) {
+        nodeInfos.emplace(it->second, PathNodeInfo(it->second, targetNode));
+    }
+
+    // While open set is not empty, search for targetNode
+   do {
+        // Explore neighbors of the current node
+        for (PathNode* neighborNode : currentNode->getNeighbors()) {
+            // If this neighbor is not closed
+            if (!nodeInfos[neighborNode].isClosed()) {
+                // If its already in the open set
+                if (openSet.find(neighborNode) != openSet.end()) {
+                    // Calculate the actual cost
+                    unsigned int actualCost = nodeInfos[currentNode].getActualCost() + 1;
+
+                    // If the actual cost just calculated is better than the current actual cost
+                    PathNodeInfo& neighborNodeInfo = nodeInfos[neighborNode];
+                    if (actualCost < neighborNodeInfo.getActualCost()) {
+                        neighborNodeInfo.setParent(currentNode);
+                        neighborNodeInfo.setActualCost(actualCost);
+                    }
+                } // Otherwise, not in open set. Initialize info and put into open set.
+                else {
+                    PathNodeInfo& neighborNodeInfo = nodeInfos[neighborNode];
+                    neighborNodeInfo.setParent(currentNode);
+                    neighborNodeInfo.setActualCost(nodeInfos[currentNode].getActualCost() + 1);
+                    openSet.insert(neighborNode);
+                }
+            }
+        }
+
+        // If the open set is empty, we're done
+        if (openSet.empty()) break;
+
+        // Update the current node with the node with lowest decision value in openSet
+		currentNode = *openSet.begin();
+		for (set<PathNode*>::iterator it = openSet.begin(); it != openSet.end(); it++) {
+			if (nodeInfos[*it].getDecisionValue() < nodeInfos[currentNode].getDecisionValue()) {
+				currentNode = *it;
+			}
+		}
+
+        // Remove the current node from the openset and make it closed
+		openSet.erase(currentNode);
+		nodeInfos[currentNode].close();
+    }  while (currentNode != targetNode);
+
+    // Construct the path
     stack<PathNode*> path;
+	do {
+		path.push(currentNode);
+		currentNode = nodeInfos[currentNode].getParent();
+	} while (currentNode != startNode);
 
     // Return the path
     return path;
@@ -210,7 +281,8 @@ int main(void) {
     // Find the path to the food using BFS
     stack<PathNode*> path = findFoodAStar(
         graphMap->at(PathCoordinates(pacman_r, pacman_c)), 
-        graphMap->at(PathCoordinates(food_r, food_c))
+        graphMap->at(PathCoordinates(food_r, food_c)),
+        graphMap
     );
 
     // Print out the path to the food for hacker rank output
